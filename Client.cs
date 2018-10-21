@@ -50,7 +50,7 @@ namespace EasyPipes
             return (T)new ProxyGenerator().CreateInterfaceProxyWithoutTarget(typeof(T), new Proxy<T>(this));
         }
 
-        public virtual bool Connect()
+        protected virtual bool Connect()
         {
             NamedPipeClientStream source = new NamedPipeClientStream(
                 ".",
@@ -97,7 +97,7 @@ namespace EasyPipes
             return rv.Return;
         }
 
-        public virtual void Disconnect()
+        protected virtual void Disconnect()
         {
             if(Stream != null)
                 Stream.Dispose();
