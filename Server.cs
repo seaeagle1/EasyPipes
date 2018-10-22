@@ -16,6 +16,7 @@ namespace EasyPipes
 
         public string PipeName { get; private set; }
         public CancellationTokenSource CancellationToken { get; private set; }
+        public List<Type> KnownTypes { get; private set; }
 
         const int NumberOfThreads = 2;
         readonly Dictionary<string, object> services = new Dictionary<string, object>();
@@ -26,12 +27,15 @@ namespace EasyPipes
         {
             PipeName = pipe;
             CancellationToken = new CancellationTokenSource();
+            KnownTypes = new List<Type>();
         }
 
         public void RegisterService<T>(T instance)
         {
             services[typeof(T).Name] = instance;
             types[typeof(T).Name] = typeof(T);
+
+            IpcStream.ScanInterfaceForTypes(typeof(T), KnownTypes);
         }
 
         public void DeregisterService<T>()
@@ -100,7 +104,7 @@ namespace EasyPipes
 
         public void ProcessMessage(Stream source)
         {
-            IpcStream stream = new IpcStream(source);
+            IpcStream stream = new IpcStream(source, KnownTypes);
 
             IpcMessage msg = stream.ReadMessage();
 

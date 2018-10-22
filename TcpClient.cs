@@ -27,7 +27,7 @@ namespace EasyPipes
             {
                 connection = new System.Net.Sockets.TcpClient();
                 connection.Connect(EndPoint);
-                Stream = new IpcStream(connection.GetStream());
+                Stream = new IpcStream(connection.GetStream(), KnownTypes);
             } catch(SocketException e)
             {
                 System.Diagnostics.Debug.WriteLine(e);

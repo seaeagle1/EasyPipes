@@ -39,14 +39,18 @@ namespace EasyPipes
 
         public string PipeName { get; private set; }
         protected IpcStream Stream { get; set; }
+        public List<Type> KnownTypes { get; private set; }
 
         public Client(string pipeName)
         {
             PipeName = pipeName;
+            KnownTypes = new List<Type>();
         }
 
         public T GetServiceProxy<T>()
         {
+            IpcStream.ScanInterfaceForTypes(typeof(T), KnownTypes);
+
             return (T)new ProxyGenerator().CreateInterfaceProxyWithoutTarget(typeof(T), new Proxy<T>(this));
         }
 
@@ -66,7 +70,7 @@ namespace EasyPipes
                 return false;
             }
 
-            Stream = new IpcStream(source);
+            Stream = new IpcStream(source, KnownTypes);
             return true;
         }
 

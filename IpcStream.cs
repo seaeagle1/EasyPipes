@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Xml;
@@ -15,12 +16,14 @@ namespace EasyPipes
     public class IpcStream : IDisposable
     {
         public Stream BaseStream { get; private set; }
+        public IReadOnlyList<Type> KnownTypes { get; private set; }
 
         private bool _disposed = false;
 
-        public IpcStream(Stream s)
+        public IpcStream(Stream s, IReadOnlyList<Type> knowntypes)
         {
             BaseStream = s;
+            KnownTypes = knowntypes;
         }
 
         ~IpcStream()
@@ -58,7 +61,7 @@ namespace EasyPipes
             byte[] msg = this.ReadBytes();
 
             // deserialize
-            DataContractSerializer serializer = new DataContractSerializer(typeof(IpcMessage));
+            DataContractSerializer serializer = new DataContractSerializer(typeof(IpcMessage), KnownTypes);
             XmlDictionaryReader rdr = XmlDictionaryReader
                 .CreateBinaryReader(msg, XmlDictionaryReaderQuotas.Max);
 
@@ -68,7 +71,7 @@ namespace EasyPipes
         public void WriteMessage(IpcMessage msg)
         {
             // serialize
-            DataContractSerializer serializer = new DataContractSerializer(typeof(IpcMessage));
+            DataContractSerializer serializer = new DataContractSerializer(typeof(IpcMessage), KnownTypes);
             using (MemoryStream stream = new MemoryStream())
             {
                 XmlDictionaryWriter writer = XmlDictionaryWriter.CreateBinaryWriter(stream);
@@ -85,6 +88,32 @@ namespace EasyPipes
         {
             BaseStream.Close();
             _disposed = true;
+        }
+
+        public static void ScanInterfaceForTypes(Type T, IList<Type> knownTypes)
+        {
+            // scan used types
+            foreach (MethodInfo mi in T.GetMethods())
+            {
+                Type t;
+                foreach (ParameterInfo pi in mi.GetParameters())
+                {
+                    t = pi.ParameterType;
+
+                    if (!t.IsClass && !t.IsInterface)
+                        continue;
+
+                    if (!knownTypes.Contains(t))
+                        knownTypes.Add(t);
+                }
+
+                t = mi.ReturnType;
+                if (!t.IsClass && !t.IsInterface)
+                    continue;
+
+                if (!knownTypes.Contains(t))
+                    knownTypes.Add(t);
+            }
         }
     }
 }
