@@ -13,8 +13,9 @@
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>EasyPipesKey.pfx</AssemblyOriginatorKeyFile>
     <PackageReleaseNotes>First proper release!</PackageReleaseNotes>
-    <AssemblyVersion>1.1.0.0</AssemblyVersion>
-    <FileVersion>1.1.0.0</FileVersion>
+    <AssemblyVersion>1.2.0.0</AssemblyVersion>
+    <FileVersion>1.2.0.0</FileVersion>
+    <Version>1.2.0</Version>
   </PropertyGroup>
 
   <ItemGroup>

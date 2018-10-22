@@ -1,7 +1,7 @@
 # EasyPipes
 Simple C# library for NamedPipe and TCP-based IPC
 
-Written against .NET Core 2.1, ought to be compatible with most modern .NET versions.
+Written against .NET Standard 2.0, ought to be compatible with most modern .NET versions.
 
 ## Usage
 
