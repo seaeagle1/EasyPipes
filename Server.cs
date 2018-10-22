@@ -21,7 +21,7 @@ namespace EasyPipes
         const int NumberOfThreads = 2;
         readonly Dictionary<string, object> services = new Dictionary<string, object>();
         readonly Dictionary<string, Type> types = new Dictionary<string, Type>();
-        private Task serverTask;
+        private List<Task> serverTask;
 
         public Server(string pipe)
         {
@@ -50,34 +50,25 @@ namespace EasyPipes
                 throw new InvalidOperationException("Already running");
 
             // asynchonously start the receiving threads, store task for later await
-            serverTask = DoStart();
+            serverTask = new List<Task>();
+            DoStart();
         }
 
-        protected virtual async Task DoStart()
+        protected virtual void DoStart()
         {
-            List<Task> tasklist = new List<Task>();
-
             // Start +1 receive actions
-            for(short i=1; i<NumberOfThreads; ++i)
+            for(short i=0; i<NumberOfThreads; ++i)
             {
-                tasklist.Add(Task.Factory.StartNew(ReceiveAction));
-            }
-
-            // While we've not been cancelled, restart a receive action when one finishes
-            while (!CancellationToken.IsCancellationRequested)
-            {
-                tasklist.Add(Task.Factory.StartNew(ReceiveAction));
-                Task t = await Task.WhenAny(tasklist);
-
-                tasklist.Remove(t);
+                Task t = Task.Factory.StartNew(ReceiveAction);
+                serverTask.Add(t);
             }
         }
 
-        public void Stop()
+        public virtual void Stop()
         {
             // send cancel token and wait for threads to end
             CancellationToken.Cancel();
-            serverTask.Wait();
+            Task.WaitAll(serverTask.ToArray(), 500);
             serverTask = null;
         }
 
@@ -94,10 +85,12 @@ namespace EasyPipes
                         PipeOptions.Asynchronous))
                 {
                     Task t = serverStream.WaitForConnectionAsync(CancellationToken.Token);
-                    t.Wait();
+                    t.GetAwaiter().GetResult();
 
-                    ProcessMessage(serverStream);
+                    ProcessMessage(serverStream); 
                 }
+
+                serverTask.Add(Task.Factory.StartNew(ReceiveAction));
             }
             catch (OperationCanceledException) { }
         }

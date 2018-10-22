@@ -23,13 +23,17 @@ namespace EasyPipes
             EndPoint = address;
         }
 
-        protected override async Task DoStart()
+        protected override void DoStart()
         {
             listener = new TcpListener(EndPoint);
             listener.Start();
 
-            await base.DoStart();
+            base.DoStart();
+        }
 
+        public override void Stop()
+        {
+            base.Stop();
             listener.Stop();
         }
 
