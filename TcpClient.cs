@@ -10,12 +10,25 @@ using System.Text;
 
 namespace EasyPipes
 {
+    /// <summary>
+    /// A <see cref="System.Net.Sockets.TcpClient"/> based IPC client
+    /// </summary>
     public class TcpClient : Client
     {
+        /// <summary>
+        /// Ip and port to connect to
+        /// </summary>
         public IPEndPoint EndPoint { get; private set; }
 
+        /// <summary>
+        /// Tcp connection
+        /// </summary>
         protected System.Net.Sockets.TcpClient connection;
 
+        /// <summary>
+        /// Construct the client
+        /// </summary>
+        /// <param name="address">Address and port to connect to</param>
         public TcpClient(IPEndPoint address) : base(null)
         {
             EndPoint = address;

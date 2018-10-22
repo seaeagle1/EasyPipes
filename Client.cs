@@ -9,6 +9,9 @@ using Castle.DynamicProxy;
 
 namespace EasyPipes
 {
+    /// <summary>
+    /// <see cref="NamedPipeClientStream"/> based IPC client
+    /// </summary>
     public class Client
     {
         class Proxy<T> : IInterceptor
@@ -35,16 +38,35 @@ namespace EasyPipes
             }
         }
 
+        /// <summary>
+        /// Name of the pipe
+        /// </summary>
         public string PipeName { get; private set; }
+        /// <summary>
+        /// Pipe data stream
+        /// </summary>
         protected IpcStream Stream { get; set; }
+        /// <summary>
+        /// List of types registered with serializer 
+        /// <seealso cref="System.Runtime.Serialization.DataContractSerializer.KnownTypes"/>
+        /// </summary>
         public List<Type> KnownTypes { get; private set; }
 
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="pipeName">Name of the pipe</param>
         public Client(string pipeName)
         {
             PipeName = pipeName;
             KnownTypes = new List<Type>();
         }
 
+        /// <summary>
+        /// Scans the service interface and builds proxy class
+        /// </summary>
+        /// <typeparam name="T">Service interface, must equal server-side</typeparam>
+        /// <returns>Proxy class for remote calls</returns>
         public T GetServiceProxy<T>()
         {
             IpcStream.ScanInterfaceForTypes(typeof(T), KnownTypes);
@@ -52,6 +74,10 @@ namespace EasyPipes
             return (T)new ProxyGenerator().CreateInterfaceProxyWithoutTarget(typeof(T), new Proxy<T>(this));
         }
 
+        /// <summary>
+        /// Connect to server
+        /// </summary>
+        /// <returns>True if succeeded, false if not</returns>
         protected virtual bool Connect()
         {
             NamedPipeClientStream source = new NamedPipeClientStream(
@@ -72,6 +98,12 @@ namespace EasyPipes
             return true;
         }
 
+        /// <summary>
+        /// Send the provided <see cref="IpcMessage"/> over the datastream
+        /// Opens and closes a connection if not open yet
+        /// </summary>
+        /// <param name="message">The message to send</param>
+        /// <returns>Return value from the Remote call</returns>
         protected object SendMessage(IpcMessage message)
         {
             bool closeStream = false;
@@ -99,6 +131,9 @@ namespace EasyPipes
             return rv.Return;
         }
 
+        /// <summary>
+        /// Disconnect from the server
+        /// </summary>
         protected virtual void Disconnect()
         {
             if(Stream != null)

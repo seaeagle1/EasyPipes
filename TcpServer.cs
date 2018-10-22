@@ -12,12 +12,25 @@ using System.Threading.Tasks;
 
 namespace EasyPipes
 {
+    /// <summary>
+    /// A <see cref="TcpListener"/> based IPC server
+    /// </summary>
     public class TcpServer : Server
     {
+        /// <summary>
+        /// IP and address bound by the server
+        /// </summary>
         public IPEndPoint EndPoint { get; private set; }
 
+        /// <summary>
+        /// The Tcp connection
+        /// </summary>
         protected TcpListener listener;
 
+        /// <summary>
+        /// Construct the server
+        /// </summary>
+        /// <param name="address">Address and port to bind for the server</param>
         public TcpServer(IPEndPoint address) : base(null)
         {
             EndPoint = address;

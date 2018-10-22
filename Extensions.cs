@@ -13,6 +13,12 @@ namespace EasyPipes
 {
     static class Extensions
     {
+        /// <summary>
+        /// Async awaiter for <see cref="TcpClient"/> connection, with cancellation support
+        /// </summary>
+        /// <param name="listener"></param>
+        /// <param name="ct">Cancellation token to respond to</param>
+        /// <returns>The connected client</returns>
         public static async Task<System.Net.Sockets.TcpClient> AcceptTcpClientAsync(this TcpListener listener, CancellationToken ct)
         {
             using (ct.Register(listener.Stop))

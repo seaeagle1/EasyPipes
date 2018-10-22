@@ -11,11 +11,23 @@ using System.Threading.Tasks;
 
 namespace EasyPipes
 {
+    /// <summary>
+    /// <see cref="NamedPipeClientStream"/> based IPC server
+    /// </summary>
     public class Server
     {
-
+        /// <summary>
+        /// Name of the pipe
+        /// </summary>
         public string PipeName { get; private set; }
+        /// <summary>
+        /// Token to cancel server operations
+        /// </summary>
         public CancellationTokenSource CancellationToken { get; private set; }
+        /// <summary>
+        /// List of types registered with serializer 
+        /// <seealso cref="System.Runtime.Serialization.DataContractSerializer.KnownTypes"/>
+        /// </summary>
         public List<Type> KnownTypes { get; private set; }
 
         const int NumberOfThreads = 2;
@@ -23,6 +35,10 @@ namespace EasyPipes
         readonly Dictionary<string, Type> types = new Dictionary<string, Type>();
         private List<Task> serverTask;
 
+        /// <summary>
+        /// Construct server
+        /// </summary>
+        /// <param name="pipe">Name of the pipe to use</param>
         public Server(string pipe)
         {
             PipeName = pipe;
@@ -30,20 +46,36 @@ namespace EasyPipes
             KnownTypes = new List<Type>();
         }
 
+        /// <summary>
+        /// Register a service interface on the server
+        /// </summary>
+        /// <typeparam name="T">The interface of the service</typeparam>
+        /// <param name="instance">Instance of a class implementing the service</param>
         public void RegisterService<T>(T instance)
         {
+            if (!(instance is T))
+                throw new InvalidOperationException("Instance must implement service interface");
+
             services[typeof(T).Name] = instance;
             types[typeof(T).Name] = typeof(T);
 
             IpcStream.ScanInterfaceForTypes(typeof(T), KnownTypes);
         }
 
+        /// <summary>
+        /// Deregister a service interface from the server
+        /// </summary>
+        /// <typeparam name="T">The interface of the service</typeparam>
         public void DeregisterService<T>()
         {
             services.Remove(typeof(T).Name);
             types.Remove(typeof(T).Name);
         }
 
+        /// <summary>
+        /// Start running the server tasks
+        /// Note, this will spawn asynchronous servers and return immediatly
+        /// </summary>
         public void Start()
         {
             if (serverTask != null)
@@ -54,6 +86,9 @@ namespace EasyPipes
             DoStart();
         }
 
+        /// <summary>
+        /// Spawn server tasks
+        /// </summary>
         protected virtual void DoStart()
         {
             // Start +1 receive actions
@@ -64,6 +99,9 @@ namespace EasyPipes
             }
         }
 
+        /// <summary>
+        /// Stop the server
+        /// </summary>
         public virtual void Stop()
         {
             // send cancel token and wait for threads to end
@@ -72,6 +110,9 @@ namespace EasyPipes
             serverTask = null;
         }
 
+        /// <summary>
+        /// Wait on connection and received messages
+        /// </summary>
         protected virtual void ReceiveAction()
         {
             try
@@ -95,6 +136,11 @@ namespace EasyPipes
             catch (OperationCanceledException) { }
         }
 
+        /// <summary>
+        /// Process a received message by calling the corresponding method on the service instance and 
+        /// returning the return value over the network.
+        /// </summary>
+        /// <param name="source">Network stream</param>
         public void ProcessMessage(Stream source)
         {
             IpcStream stream = new IpcStream(source, KnownTypes);

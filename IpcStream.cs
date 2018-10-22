@@ -1,25 +1,38 @@
 ﻿/* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
- 
+
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.Serialization;
-using System.Text;
 using System.Xml;
-using System.Xml.Serialization;
 
 namespace EasyPipes
 {
+    /// <summary>
+    /// Class implementing the communication protocol
+    /// </summary>
     public class IpcStream : IDisposable
     {
+        /// <summary>
+        /// Underlying network stream
+        /// </summary>
         public Stream BaseStream { get; private set; }
+
+        /// <summary>
+        /// Types registered with the serializer
+        /// </summary>
         public IReadOnlyList<Type> KnownTypes { get; private set; }
 
         private bool _disposed = false;
 
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="s">Network stream</param>
+        /// <param name="knowntypes">List of types to register with serializer</param>
         public IpcStream(Stream s, IReadOnlyList<Type> knowntypes)
         {
             BaseStream = s;
@@ -32,7 +45,11 @@ namespace EasyPipes
                 Dispose();
         }
 
-        public byte[] ReadBytes()
+        /// <summary>
+        /// Read the raw network message
+        /// </summary>
+        /// <returns>byte buffer</returns>
+        protected byte[] ReadBytes()
         {
             int length = BaseStream.ReadByte() * 256;
             length += BaseStream.ReadByte();
@@ -43,7 +60,11 @@ namespace EasyPipes
             return buffer;
         }
 
-        public void WriteBytes(byte[] buffer)
+        /// <summary>
+        /// Write a raw network message
+        /// </summary>
+        /// <param name="buffer">byte buffer</param>
+        protected void WriteBytes(byte[] buffer)
         {
             int length = buffer.Length;
             if (length > UInt16.MaxValue)
@@ -55,6 +76,10 @@ namespace EasyPipes
             BaseStream.Flush();
         }
 
+        /// <summary>
+        /// Read the next <see cref="IpcMessage"/> from the network
+        /// </summary>
+        /// <returns>The received message</returns>
         public IpcMessage ReadMessage()
         {
             // read the raw message
@@ -68,6 +93,10 @@ namespace EasyPipes
             return serializer.ReadObject(rdr) as IpcMessage;
         }
 
+        /// <summary>
+        /// Write a <see cref="IpcMessage"/> to the network
+        /// </summary>
+        /// <param name="msg">Message to write</param>
         public void WriteMessage(IpcMessage msg)
         {
             // serialize
@@ -90,6 +119,11 @@ namespace EasyPipes
             _disposed = true;
         }
 
+        /// <summary>
+        /// Scan an interface for parameter and return <see cref="Type"/>s
+        /// </summary>
+        /// <param name="T">The interface type</param>
+        /// <param name="knownTypes">List to add found types to</param>
         public static void ScanInterfaceForTypes(Type T, IList<Type> knownTypes)
         {
             // scan used types
