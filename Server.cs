@@ -128,7 +128,8 @@ namespace EasyPipes
                     Task t = serverStream.WaitForConnectionAsync(CancellationToken.Token);
                     t.GetAwaiter().GetResult();
 
-                    ProcessMessage(serverStream); 
+                    while (ProcessMessage(serverStream))
+                    { }
                 }
 
                 serverTask.Add(Task.Factory.StartNew(ReceiveAction));
@@ -141,11 +142,15 @@ namespace EasyPipes
         /// returning the return value over the network.
         /// </summary>
         /// <param name="source">Network stream</param>
-        public void ProcessMessage(Stream source)
+        public bool ProcessMessage(Stream source)
         {
             IpcStream stream = new IpcStream(source, KnownTypes);
 
             IpcMessage msg = stream.ReadMessage();
+
+            // this was a close-connection notification
+            if (msg.StatusMsg == StatusMessage.CloseConnection)
+                return false;
 
             bool processedOk = false;
             string error = "";
@@ -183,6 +188,12 @@ namespace EasyPipes
                 returnMsg = new IpcMessage() { Error = error };
 
             stream.WriteMessage(returnMsg);
+
+            // if there's more to come, keep reading a next message
+            if (msg.StatusMsg == StatusMessage.KeepAlive)
+                return true;
+            else // otherwise close the connection
+                return false;
         }
     }
 }

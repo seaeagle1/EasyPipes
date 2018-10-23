@@ -75,10 +75,11 @@ namespace EasyPipes
         }
 
         /// <summary>
-        /// Connect to server
+        /// Connect to server. This opens a persistent connection allowing multiple remote calls
+        /// until <see cref="Disconnect(bool)"/> is called.
         /// </summary>
         /// <returns>True if succeeded, false if not</returns>
-        protected virtual bool Connect()
+        public virtual bool Connect()
         {
             NamedPipeClientStream source = new NamedPipeClientStream(
                 ".",
@@ -106,12 +107,16 @@ namespace EasyPipes
         /// <returns>Return value from the Remote call</returns>
         protected object SendMessage(IpcMessage message)
         {
+            // if not connected, this is a single-message connection
             bool closeStream = false;
             if (Stream == null)
             {
                 if (!Connect())
                     throw new TimeoutException("Unable to connect");
                 closeStream = true;
+            } else
+            { // otherwise tell server to keep connection alive
+                message.StatusMsg = StatusMessage.KeepAlive;
             }
 
             IpcMessage rv;
@@ -123,7 +128,7 @@ namespace EasyPipes
             }
 
             if (closeStream)
-                Disconnect();
+                Disconnect(false);
 
             if (rv.Error != null)
                 throw new InvalidOperationException(rv.Error);
@@ -134,10 +139,20 @@ namespace EasyPipes
         /// <summary>
         /// Disconnect from the server
         /// </summary>
-        protected virtual void Disconnect()
+        /// <param name="sendCloseMessage">Indicate whether to send a closing notification
+        /// to the server (if you called Connect(), this should be true)</param>
+        public virtual void Disconnect(bool sendCloseMessage = true)
         {
-            if(Stream != null)
+            // send close notification
+            if (sendCloseMessage)
+            {
+                IpcMessage msg = new IpcMessage() { StatusMsg = StatusMessage.CloseConnection };
+                Stream.WriteMessage(msg);
+            }
+
+            if (Stream != null)
                 Stream.Dispose();
+
             Stream = null;
         }
     }

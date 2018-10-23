@@ -34,7 +34,7 @@ namespace EasyPipes
             EndPoint = address;
         }
 
-        protected override bool Connect()
+        public override bool Connect()
         {
             try
             {
@@ -50,9 +50,9 @@ namespace EasyPipes
             return true;
         }
 
-        protected override void Disconnect()
+        public override void Disconnect(bool sendCloseMessage = true)
         {
-            base.Disconnect();
+            base.Disconnect(sendCloseMessage);
 
             if (connection != null)
                 connection.Close();

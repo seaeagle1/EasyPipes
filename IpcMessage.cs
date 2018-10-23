@@ -30,9 +30,26 @@ namespace EasyPipes
         /// Method return value
         /// </summary>
         public object Return { get; set; }
+
+
         /// <summary>
         /// Error produced during remote processing
         /// </summary>
         public string Error { get; set; }
+        /// <summary>
+        /// Send a status message
+        /// </summary>
+        public StatusMessage StatusMsg { get; set; }
+    }
+
+
+    /// <summary>
+    /// Enumerator of status messages used in <see cref="IpcMessage"/>
+    /// </summary>
+    public enum StatusMessage
+    {
+        None = 0,
+        KeepAlive,
+        CloseConnection
     }
 }
