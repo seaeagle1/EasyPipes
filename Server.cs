@@ -31,6 +31,7 @@ namespace EasyPipes
         public List<Type> KnownTypes { get; private set; }
 
         const int NumberOfThreads = 2;
+        public const int ReadTimeOut = 30000;
         readonly Dictionary<string, object> services = new Dictionary<string, object>();
         readonly Dictionary<string, Type> types = new Dictionary<string, Type>();
         private List<Task> serverTask;
@@ -151,6 +152,8 @@ namespace EasyPipes
             // this was a close-connection notification
             if (msg.StatusMsg == StatusMessage.CloseConnection)
                 return false;
+            else if (msg.StatusMsg == StatusMessage.Ping)
+                return true;
 
             bool processedOk = false;
             string error = "";

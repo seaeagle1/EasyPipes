@@ -67,7 +67,9 @@ namespace EasyPipes
 
                     using (NetworkStream serverStream = client.GetStream())
                     {
-                        ProcessMessage(serverStream);
+                        serverStream.ReadTimeout = Server.ReadTimeOut;
+                        while (ProcessMessage(serverStream))
+                        { }
                     }
                 }
             }

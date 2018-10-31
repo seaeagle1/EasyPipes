@@ -34,7 +34,7 @@ namespace EasyPipes
             EndPoint = address;
         }
 
-        public override bool Connect()
+        public override bool Connect(bool keepalive = true)
         {
             try
             {
@@ -46,6 +46,9 @@ namespace EasyPipes
                 System.Diagnostics.Debug.WriteLine(e);
                 return false;
             }
+
+            if(keepalive)
+                StartPing();
 
             return true;
         }

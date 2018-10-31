@@ -50,6 +50,7 @@ namespace EasyPipes
     {
         None = 0,
         KeepAlive,
-        CloseConnection
+        CloseConnection,
+        Ping
     }
 }

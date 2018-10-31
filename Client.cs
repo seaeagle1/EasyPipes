@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO.Pipes;
+using System.Threading;
 using Castle.DynamicProxy;
 
 namespace EasyPipes
@@ -52,6 +53,8 @@ namespace EasyPipes
         /// </summary>
         public List<Type> KnownTypes { get; private set; }
 
+        protected Timer timer;
+
         /// <summary>
         /// Constructor
         /// </summary>
@@ -78,8 +81,9 @@ namespace EasyPipes
         /// Connect to server. This opens a persistent connection allowing multiple remote calls
         /// until <see cref="Disconnect(bool)"/> is called.
         /// </summary>
+        /// <param name="keepalive">Whether to send pings over the connection to keep it alive</param>
         /// <returns>True if succeeded, false if not</returns>
-        public virtual bool Connect()
+        public virtual bool Connect(bool keepalive = true)
         {
             NamedPipeClientStream source = new NamedPipeClientStream(
                 ".",
@@ -96,7 +100,22 @@ namespace EasyPipes
             }
 
             Stream = new IpcStream(source, KnownTypes);
+
+            if(keepalive)
+                StartPing();
             return true;
+        }
+
+        protected void StartPing()
+        {
+            timer = new Timer(
+                (object state) =>
+                {
+                    SendMessage(new IpcMessage { StatusMsg = StatusMessage.Ping });
+                },
+                null,
+                Server.ReadTimeOut / 2,
+                Server.ReadTimeOut / 2);
         }
 
         /// <summary>
@@ -111,10 +130,10 @@ namespace EasyPipes
             bool closeStream = false;
             if (Stream == null)
             {
-                if (!Connect())
+                if (!Connect(false))
                     throw new TimeoutException("Unable to connect");
                 closeStream = true;
-            } else
+            } else if( message.StatusMsg == StatusMessage.None )
             { // otherwise tell server to keep connection alive
                 message.StatusMsg = StatusMessage.KeepAlive;
             }
@@ -123,6 +142,10 @@ namespace EasyPipes
             lock (Stream)
             {
                 Stream.WriteMessage(message);
+
+                // don't wait for answer on keepalive-ping
+                if (message.StatusMsg == StatusMessage.Ping)
+                    return null;
 
                 rv = Stream.ReadMessage();
             }
@@ -146,6 +169,9 @@ namespace EasyPipes
             // send close notification
             if (sendCloseMessage)
             {
+                // stop keepalive ping
+                timer.Dispose();
+
                 IpcMessage msg = new IpcMessage() { StatusMsg = StatusMessage.CloseConnection };
                 Stream.WriteMessage(msg);
             }
