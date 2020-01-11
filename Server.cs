@@ -34,7 +34,7 @@ namespace EasyPipes
         public const int ReadTimeOut = 30000;
         readonly Dictionary<string, object> services = new Dictionary<string, object>();
         readonly Dictionary<string, Type> types = new Dictionary<string, Type>();
-        private List<Task> serverTask;
+        protected List<Task> serverTask;
 
         /// <summary>
         /// Construct server
@@ -54,10 +54,32 @@ namespace EasyPipes
         /// <param name="instance">Instance of a class implementing the service</param>
         public void RegisterService<T>(T instance)
         {
+            if(!typeof(T).IsInterface)
+                throw new InvalidOperationException("Service Type is not an interface");
+
             if (!(instance is T))
                 throw new InvalidOperationException("Instance must implement service interface");
 
             services[typeof(T).Name] = instance;
+            types[typeof(T).Name] = typeof(T);
+
+            IpcStream.ScanInterfaceForTypes(typeof(T), KnownTypes);
+        }
+
+        public void RegisterStatefulService<T>(Type t)
+        {
+            if (!typeof(T).IsInterface)
+                throw new InvalidOperationException("Service Type is not an interface");
+            
+            // check if service implements interface
+            if (t.GetInterface(typeof(T).Name) == null)
+                throw new InvalidOperationException("Instance must implement service interface");
+
+            // check for default constructor
+            if (t.GetConstructor(Type.EmptyTypes) == null || t.IsAbstract)
+                throw new InvalidOperationException("Stateful service requires default constructor");
+
+            services[typeof(T).Name] = new StatefulProxy(t);
             types[typeof(T).Name] = typeof(T);
 
             IpcStream.ScanInterfaceForTypes(typeof(T), KnownTypes);
@@ -69,6 +91,8 @@ namespace EasyPipes
         /// <typeparam name="T">The interface of the service</typeparam>
         public void DeregisterService<T>()
         {
+            // TODO deregister StatefulProxy
+
             services.Remove(typeof(T).Name);
             types.Remove(typeof(T).Name);
         }
@@ -129,8 +153,10 @@ namespace EasyPipes
                     Task t = serverStream.WaitForConnectionAsync(CancellationToken.Token);
                     t.GetAwaiter().GetResult();
 
-                    while (ProcessMessage(serverStream))
+                    Guid id = Guid.NewGuid();
+                    while (ProcessMessage(serverStream, id))
                     { }
+                    StatefulProxy.NotifyDisconnect(id);
                 }
 
                 serverTask.Add(Task.Factory.StartNew(ReceiveAction));
@@ -143,7 +169,7 @@ namespace EasyPipes
         /// returning the return value over the network.
         /// </summary>
         /// <param name="source">Network stream</param>
-        public bool ProcessMessage(Stream source)
+        public bool ProcessMessage(Stream source, Guid streamId)
         {
             IpcStream stream = new IpcStream(source, KnownTypes);
 
@@ -161,24 +187,41 @@ namespace EasyPipes
             // find the service
             if (services.TryGetValue(msg.Service, out object instance) && instance != null)
             {
-                // get the method
-                System.Reflection.MethodInfo method = instance.GetType().GetMethod(msg.Method);
-
                 // double check method existence against type-list for security
                 // typelist will contain interfaces instead of instances
-                if (types[msg.Service].GetMethod(msg.Method) != null && method != null)
+                if (types[msg.Service].GetMethod(msg.Method) != null )
                 {
-                    try
+                    // separate handling for stateful service
+                    if (instance is StatefulProxy)
                     {
-                        // invoke method
-                        rv = method.Invoke(instance, msg.Parameters);
-                        processedOk = true;
+                        try
+                        {
+                            // invoke method
+                            rv = (instance as StatefulProxy).Invoke(streamId, msg.Method, msg.Parameters);
+                            processedOk = true;
+                        }
+                        catch (Exception e) { error = e.ToString(); }
                     }
-                    catch (Exception e) { error = e.ToString(); }
-
+                    else
+                    {
+                        // get the method
+                        System.Reflection.MethodInfo method = instance.GetType().GetMethod(msg.Method);
+                        if (method != null)
+                        {
+                            try
+                            {
+                                // invoke method
+                                rv = method.Invoke(instance, msg.Parameters);
+                                processedOk = true;
+                            }
+                            catch (Exception e) { error = e.ToString(); }
+                        }
+                        else
+                            error = "Could not find method";
+                    }
                 }
                 else
-                    error = "Could not find method";
+                    error = "Could not find method in type";
             }
             else
                 error = "Could not find service";

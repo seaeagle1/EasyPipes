@@ -50,7 +50,7 @@ namespace EasyPipes
             listener.Stop();
         }
 
-        protected override async void ReceiveAction()
+        protected override void ReceiveAction()
         {
             try
             {
@@ -68,10 +68,15 @@ namespace EasyPipes
                     using (NetworkStream serverStream = client.GetStream())
                     {
                         serverStream.ReadTimeout = Server.ReadTimeOut;
-                        while (ProcessMessage(serverStream))
+
+                        Guid id = Guid.NewGuid();
+                        while (ProcessMessage(serverStream, id))
                         { }
+                        StatefulProxy.NotifyDisconnect(id);
                     }
                 }
+
+                serverTask.Add(Task.Factory.StartNew(ReceiveAction));
             }
             catch (OperationCanceledException) { }
         }
