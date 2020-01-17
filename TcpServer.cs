@@ -58,9 +58,8 @@ namespace EasyPipes
                     return;
 
                 var t = listener.AcceptTcpClientAsync(CancellationToken.Token);
-                t.Wait();
 
-                using (System.Net.Sockets.TcpClient client = t.Result )
+                using (System.Net.Sockets.TcpClient client = t.GetAwaiter().GetResult())
                 {
                     if (CancellationToken.IsCancellationRequested)
                         return;
@@ -78,7 +77,7 @@ namespace EasyPipes
 
                 serverTask.Add(Task.Factory.StartNew(ReceiveAction));
             }
-            catch (OperationCanceledException) { }
+            catch (OperationCanceledException e) { }
         }
     }
 }
