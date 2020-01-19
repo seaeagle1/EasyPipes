@@ -39,6 +39,7 @@ namespace EasyPipes
             try
             {
                 connection = new System.Net.Sockets.TcpClient();
+                connection.ReceiveTimeout = 2000;
                 connection.Connect(EndPoint);
                 Stream = new IpcStream(connection.GetStream(), KnownTypes);
             } catch(SocketException e)

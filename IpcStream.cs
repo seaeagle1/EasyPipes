@@ -51,11 +51,17 @@ namespace EasyPipes
         /// <returns>byte buffer</returns>
         protected byte[] ReadBytes()
         {
-            int length = BaseStream.ReadByte() * 256;
-            length += BaseStream.ReadByte();
+            byte[] buffer = new byte[2];
+            if (BaseStream.Read(buffer, 0, 2) != 2)
+                throw new EndOfStreamException("Insufficient bytes read from network stream");
 
-            byte[] buffer = new byte[length];
-            BaseStream.Read(buffer, 0, length);
+            int length = buffer[0] * 256;
+            length += buffer[1];
+
+            buffer = new byte[length];
+            int read = 0;
+            while(read < length)
+                read += BaseStream.Read(buffer, read, length-read);
 
             return buffer;
         }
@@ -70,8 +76,7 @@ namespace EasyPipes
             if (length > UInt16.MaxValue)
                 throw new InvalidOperationException("Message is too long");
 
-            BaseStream.WriteByte((byte)(length / 256));
-            BaseStream.WriteByte((byte)(length & 255));
+            BaseStream.Write(new byte[] { (byte)(length / 256), (byte)(length & 255) }, 0, 2);
             BaseStream.Write(buffer, 0, length);
             BaseStream.Flush();
         }

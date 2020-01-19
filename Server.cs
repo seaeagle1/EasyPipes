@@ -153,12 +153,14 @@ namespace EasyPipes
                     Task t = serverStream.WaitForConnectionAsync(CancellationToken.Token);
                     t.GetAwaiter().GetResult();
 
+ 
                     Guid id = Guid.NewGuid();
                     while (ProcessMessage(serverStream, id))
                     { }
                     StatefulProxy.NotifyDisconnect(id);
                 }
 
+                // Todo: make sure there's a new listener, even when this isn't reached
                 serverTask.Add(Task.Factory.StartNew(ReceiveAction));
             }
             catch (OperationCanceledException) { }

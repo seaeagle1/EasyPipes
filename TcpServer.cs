@@ -39,9 +39,11 @@ namespace EasyPipes
         protected override void DoStart()
         {
             listener = new TcpListener(EndPoint);
+            listener.ExclusiveAddressUse = false;
             listener.Start();
 
-            base.DoStart();
+            Task t = Task.Factory.StartNew(ReceiveAction);
+            serverTask.Add(t);
         }
 
         public override void Stop()
@@ -54,15 +56,13 @@ namespace EasyPipes
         {
             try
             {
-                if (CancellationToken.IsCancellationRequested)
-                    return;
-
                 var t = listener.AcceptTcpClientAsync(CancellationToken.Token);
 
                 using (System.Net.Sockets.TcpClient client = t.GetAwaiter().GetResult())
                 {
-                    if (CancellationToken.IsCancellationRequested)
-                        return;
+                    // Start new connection waiter before anything can go wrong here,
+                    // leaving us without a server
+                    serverTask.Add(Task.Factory.StartNew(ReceiveAction));
 
                     using (NetworkStream serverStream = client.GetStream())
                     {
@@ -75,9 +75,8 @@ namespace EasyPipes
                     }
                 }
 
-                serverTask.Add(Task.Factory.StartNew(ReceiveAction));
             }
-            catch (OperationCanceledException e) { }
+            catch (OperationCanceledException) { }
         }
     }
 }

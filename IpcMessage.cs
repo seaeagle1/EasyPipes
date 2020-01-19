@@ -11,7 +11,7 @@ namespace EasyPipes
     /// <summary>
     /// This class represents a message across the network
     /// </summary>
-    public struct IpcMessage
+    public class IpcMessage
     {
         /// <summary>
         /// Service name
