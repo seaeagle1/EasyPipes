@@ -90,7 +90,7 @@ namespace EasyPipes
             XmlDictionaryReader rdr = XmlDictionaryReader
                 .CreateBinaryReader(msg, XmlDictionaryReaderQuotas.Max);
 
-            return serializer.ReadObject(rdr) as IpcMessage;
+            return (IpcMessage)serializer.ReadObject(rdr);
         }
 
         /// <summary>

@@ -15,7 +15,7 @@ namespace EasyPipes
     /// </summary>
     public class Client
     {
-        class Proxy<T> : IInterceptor
+        public class Proxy<T> : IInterceptor
         {
             public Client Client { get; private set; }
 
@@ -26,16 +26,20 @@ namespace EasyPipes
 
             public void Intercept(IInvocation invocation)
             {
-                // build message for intercepted call
-                IpcMessage msg = new IpcMessage()
-                {
-                    Service = typeof(T).Name,
-                    Method = invocation.Method.Name,
-                    Parameters = invocation.Arguments
-                };
+                invocation.ReturnValue = Intercept(invocation.Method.Name, invocation.Arguments);
+            }
 
+            protected object Intercept(string methodName, object[] arguments)
+            {
+                // build message for intercepted call
+                IpcMessage msg = new IpcMessage();
+
+                msg.Service = typeof(T).Name;
+                msg.Method = methodName;
+                msg.Parameters = arguments;
+                
                 // send message
-                invocation.ReturnValue = Client.SendMessage(msg);
+                return Client.SendMessage(msg);
             }
         }
 
@@ -75,6 +79,20 @@ namespace EasyPipes
             IpcStream.ScanInterfaceForTypes(typeof(T), KnownTypes);
 
             return (T)new ProxyGenerator().CreateInterfaceProxyWithoutTarget(typeof(T), new Proxy<T>(this));
+        }
+
+        /// <summary>
+        /// Scans the service interface and registers custom proxy class
+        /// </summary>
+        /// <typeparam name="T">Service interface, must equal server-side</typeparam>
+        /// <returns>Proxy class for remote calls</returns>
+        public void RegisterServiceProxy<T>(Proxy<T> customProxy)
+        {
+            // check if service implements interface
+            if (customProxy.GetType().GetInterface(typeof(T).Name) == null)
+                throw new InvalidOperationException("Custom Proxy class does not implement service interface");
+
+            IpcStream.ScanInterfaceForTypes(typeof(T), KnownTypes);
         }
 
         /// <summary>

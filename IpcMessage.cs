@@ -11,35 +11,35 @@ namespace EasyPipes
     /// <summary>
     /// This class represents a message across the network
     /// </summary>
-    public class IpcMessage
+    public struct IpcMessage
     {
         /// <summary>
         /// Service name
         /// </summary>
-        public string Service { get; set; }
+        public string Service;
         /// <summary>
         /// Method name
         /// </summary>
-        public string Method { get; set; }
+        public string Method;
         /// <summary>
         /// Method parameters
         /// </summary>
-        public object[] Parameters { get; set; }
+        public object[] Parameters;
 
         /// <summary>
         /// Method return value
         /// </summary>
-        public object Return { get; set; }
+        public object Return;
 
 
         /// <summary>
         /// Error produced during remote processing
         /// </summary>
-        public string Error { get; set; }
+        public string Error;
         /// <summary>
         /// Send a status message
         /// </summary>
-        public StatusMessage StatusMsg { get; set; }
+        public StatusMessage StatusMsg;
     }
 
 
