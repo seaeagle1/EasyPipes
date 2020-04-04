@@ -3,7 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.28010.2046
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EasyPipes", "EasyPipes.csproj", "{5B0BE3B6-91C6-4251-BE6C-40A43B9C07FB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EasyPipes", "EasyPipes.csproj", "{5B0BE3B6-91C6-4251-BE6C-40A43B9C07FB}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EPUnitTests", "UnitTests\EPUnitTests.csproj", "{BBB97946-9B71-4D7C-B8C0-B46685753247}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,8 +23,19 @@ Global
 		{5B0BE3B6-91C6-4251-BE6C-40A43B9C07FB}.Release|Any CPU.Build.0 = Release|Any CPU
 		{5B0BE3B6-91C6-4251-BE6C-40A43B9C07FB}.Release|x86.ActiveCfg = Release|Any CPU
 		{5B0BE3B6-91C6-4251-BE6C-40A43B9C07FB}.Release|x86.Build.0 = Release|Any CPU
+		{BBB97946-9B71-4D7C-B8C0-B46685753247}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BBB97946-9B71-4D7C-B8C0-B46685753247}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BBB97946-9B71-4D7C-B8C0-B46685753247}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{BBB97946-9B71-4D7C-B8C0-B46685753247}.Debug|x86.Build.0 = Debug|Any CPU
+		{BBB97946-9B71-4D7C-B8C0-B46685753247}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BBB97946-9B71-4D7C-B8C0-B46685753247}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BBB97946-9B71-4D7C-B8C0-B46685753247}.Release|x86.ActiveCfg = Release|Any CPU
+		{BBB97946-9B71-4D7C-B8C0-B46685753247}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {468A29EB-34D6-427A-BF13-115F11772332}
 	EndGlobalSection
 EndGlobal

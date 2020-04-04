@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -22,6 +23,9 @@ namespace EasyPipes
         /// </summary>
         public IPEndPoint EndPoint { get; private set; }
 
+        protected string EncryptionKey { get; private set; }
+        protected string IV { get; private set; }
+
         /// <summary>
         /// The Tcp connection
         /// </summary>
@@ -31,9 +35,13 @@ namespace EasyPipes
         /// Construct the server
         /// </summary>
         /// <param name="address">Address and port to bind for the server</param>
-        public TcpServer(IPEndPoint address) : base(null)
+        /// <param name="encyptionkey">Optional key for AES encryption of the stream</param>
+        /// <param name="iv">Initialization vector for AES encryption</param>
+        public TcpServer(IPEndPoint address, string encryptionkey = null, string iv = null) : base(null)
         {
             EndPoint = address;
+            EncryptionKey = encryptionkey;
+            IV = iv;
         }
 
         protected override void DoStart()
@@ -64,14 +72,21 @@ namespace EasyPipes
                     // leaving us without a server
                     serverTask.Add(Task.Factory.StartNew(ReceiveAction));
 
-                    using (NetworkStream serverStream = client.GetStream())
+                    using (NetworkStream networkStream = client.GetStream())
                     {
-                        serverStream.ReadTimeout = Server.ReadTimeOut;
+                        networkStream.ReadTimeout = Server.ReadTimeOut;
+                        Stream serverStream = networkStream;
+
+                        // encrypt stream if applicable
+                        if (EncryptionKey != null && IV != null)
+                            serverStream = new EncryptedStream(networkStream, EncryptionKey, IV);
 
                         Guid id = Guid.NewGuid();
                         while (ProcessMessage(serverStream, id))
                         { }
                         StatefulProxy.NotifyDisconnect(id);
+
+                        serverStream.Close();
                     }
                 }
 
