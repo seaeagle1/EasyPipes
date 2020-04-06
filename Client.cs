@@ -167,7 +167,7 @@ namespace EasyPipes
 
                 rv = Stream.ReadMessage();
             }
-
+            
             if (closeStream)
                 Disconnect(false);
 

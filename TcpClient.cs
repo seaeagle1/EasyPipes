@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace EasyPipes
 {
@@ -20,8 +21,7 @@ namespace EasyPipes
         /// </summary>
         public IPEndPoint EndPoint { get; private set; }
 
-        protected string EncryptionKey { get; private set; }
-        protected string IV { get; private set; }
+        protected Encryptor Encryptor { get; private set; }
 
         /// <summary>
         /// Tcp connection
@@ -34,11 +34,36 @@ namespace EasyPipes
         /// <param name="address">Address and port to connect to</param>
         /// <param name="encyptionkey">Optional key for AES encryption of the stream</param>
         /// <param name="iv">Initialization vector for AES encryption</param>        
-        public TcpClient(IPEndPoint address, string encryptionkey = null, string iv = null) : base(null)
+        public TcpClient(IPEndPoint address, Encryptor encryptor = null) : base(null)
         {
             EndPoint = address;
-            EncryptionKey = encryptionkey;
-            IV = iv;
+            Encryptor = encryptor;
+        }
+
+        public async Task<bool> ConnectAsync(bool keepalive = true)
+        {
+            try
+            {
+                // connect socket
+                connection = new System.Net.Sockets.TcpClient();
+                connection.NoDelay = true;
+                connection.ReceiveTimeout = 2000;
+                await connection.ConnectAsync(EndPoint.Address, EndPoint.Port).ConfigureAwait(false);
+                System.IO.Stream connectionStream = connection.GetStream();
+
+                Stream = new IpcStream(connectionStream, KnownTypes, Encryptor);
+
+            }
+            catch (SocketException e)
+            {
+                System.Diagnostics.Debug.WriteLine(e);
+                return false;
+            }
+
+            if (keepalive)
+                StartPing();
+
+            return true;
         }
 
         public override bool Connect(bool keepalive = true)
@@ -51,11 +76,7 @@ namespace EasyPipes
                 connection.Connect(EndPoint);
                 System.IO.Stream connectionStream = connection.GetStream();
 
-                // encrypt stream if applicable
-                if(EncryptionKey != null && IV != null)
-                    connectionStream = new EncryptedStream(connectionStream, EncryptionKey, IV);
-
-                Stream = new IpcStream(connectionStream, KnownTypes);
+                Stream = new IpcStream(connectionStream, KnownTypes, Encryptor);
 
             } catch(SocketException e)
             {

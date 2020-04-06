@@ -1,4 +1,8 @@
-﻿using System;
+﻿/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+ 
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -6,16 +10,16 @@ namespace EasyPipes
 {
     class StatefulProxy
     {
-        private Type type;
+        public Type Type { get; private set; }
         private Dictionary<Guid, object> instances = new Dictionary<Guid, object>();
 
         public StatefulProxy(Type t)
         {
-            type = t;
+            Type = t;
             proxyList.Add(this);
         }
 
-        public object Invoke(Guid id, string methodName, object[] parameters)
+        public object Invoke(Guid id, System.Reflection.MethodInfo method, object[] parameters)
         {
             object instance;
 
@@ -23,14 +27,9 @@ namespace EasyPipes
             if (!instances.TryGetValue(id, out instance))
             {
                 // if instance doesn't exist, create it
-                instance = Activator.CreateInstance(type);
+                instance = Activator.CreateInstance(Type);
                 instances[id] = instance;
             }
-
-            // get the method
-            System.Reflection.MethodInfo method = instance.GetType().GetMethod(methodName);
-            if (method == null)
-                throw new InvalidOperationException("Method not found in stateful proxy");
 
             // invoke method
             return method.Invoke(instance, parameters);

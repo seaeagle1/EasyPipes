@@ -23,8 +23,7 @@ namespace EasyPipes
         /// </summary>
         public IPEndPoint EndPoint { get; private set; }
 
-        protected string EncryptionKey { get; private set; }
-        protected string IV { get; private set; }
+        protected Encryptor Encryptor { get; private set; }
 
         /// <summary>
         /// The Tcp connection
@@ -37,11 +36,10 @@ namespace EasyPipes
         /// <param name="address">Address and port to bind for the server</param>
         /// <param name="encyptionkey">Optional key for AES encryption of the stream</param>
         /// <param name="iv">Initialization vector for AES encryption</param>
-        public TcpServer(IPEndPoint address, string encryptionkey = null, string iv = null) : base(null)
+        public TcpServer(IPEndPoint address, Encryptor encryptor = null) : base(null)
         {
             EndPoint = address;
-            EncryptionKey = encryptionkey;
-            IV = iv;
+            Encryptor = encryptor;
         }
 
         protected override void DoStart()
@@ -77,12 +75,10 @@ namespace EasyPipes
                         networkStream.ReadTimeout = Server.ReadTimeOut;
                         Stream serverStream = networkStream;
 
-                        // encrypt stream if applicable
-                        if (EncryptionKey != null && IV != null)
-                            serverStream = new EncryptedStream(networkStream, EncryptionKey, IV);
-
                         Guid id = Guid.NewGuid();
-                        while (ProcessMessage(serverStream, id))
+                        IpcStream stream = new IpcStream(serverStream, KnownTypes, Encryptor);
+
+                        while (ProcessMessage(stream, id))
                         { }
                         StatefulProxy.NotifyDisconnect(id);
 

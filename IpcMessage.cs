@@ -51,6 +51,7 @@ namespace EasyPipes
         None = 0,
         KeepAlive,
         CloseConnection,
-        Ping
+        Ping,
+        Encrypt
     }
 }

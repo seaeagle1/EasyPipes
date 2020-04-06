@@ -155,7 +155,9 @@ namespace EasyPipes
 
  
                     Guid id = Guid.NewGuid();
-                    while (ProcessMessage(serverStream, id))
+                    IpcStream stream = new IpcStream(serverStream, KnownTypes);
+
+                    while (ProcessMessage(stream, id))
                     { }
                     StatefulProxy.NotifyDisconnect(id);
                 }
@@ -171,10 +173,8 @@ namespace EasyPipes
         /// returning the return value over the network.
         /// </summary>
         /// <param name="source">Network stream</param>
-        public bool ProcessMessage(Stream source, Guid streamId)
+        public bool ProcessMessage(IpcStream stream, Guid streamId)
         {
-            IpcStream stream = new IpcStream(source, KnownTypes);
-
             IpcMessage msg = stream.ReadMessage();
 
             // this was a close-connection notification
@@ -186,6 +186,7 @@ namespace EasyPipes
             bool processedOk = false;
             string error = "";
             object rv = null;
+            IpcMessage returnMsg = new IpcMessage();
             // find the service
             if (services.TryGetValue(msg.Service, out object instance) && instance != null)
             {
@@ -199,8 +200,20 @@ namespace EasyPipes
                         try
                         {
                             // invoke method
-                            rv = (instance as StatefulProxy).Invoke(streamId, msg.Method, msg.Parameters);
+                            System.Reflection.MethodInfo method = 
+                                (instance as StatefulProxy).Type.GetMethod(msg.Method);
+                            if (method == null)
+                                throw new InvalidOperationException("Method not found in stateful proxy");
+
+                            rv = (instance as StatefulProxy).Invoke(streamId, method, msg.Parameters);
                             processedOk = true;
+
+                            // check if encryption is required
+                            if(Attribute.IsDefined(method, typeof(EncryptIfTrueAttribute))
+                                && (bool)rv == true)
+                            {
+                                returnMsg.StatusMsg = StatusMessage.Encrypt;
+                            }
                         }
                         catch (Exception e) { error = e.ToString(); }
                     }
@@ -215,6 +228,11 @@ namespace EasyPipes
                                 // invoke method
                                 rv = method.Invoke(instance, msg.Parameters);
                                 processedOk = true;
+
+                                // check if encryption is required
+                                if (Attribute.IsDefined(method, typeof(EncryptIfTrueAttribute))
+                                    && (bool)rv == true)
+                                    returnMsg.StatusMsg = StatusMessage.Encrypt;
                             }
                             catch (Exception e) { error = e.ToString(); }
                         }
@@ -229,11 +247,13 @@ namespace EasyPipes
                 error = "Could not find service";
 
             // return either return value or error message
-            IpcMessage returnMsg;
             if (processedOk)
-                returnMsg = new IpcMessage() { Return = rv };
+                returnMsg.Return = rv;
             else
-                returnMsg = new IpcMessage() { Error = error };
+            {
+                returnMsg.Error = error;
+                returnMsg.StatusMsg = StatusMessage.None;
+            }
 
             stream.WriteMessage(returnMsg);
 

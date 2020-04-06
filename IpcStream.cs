@@ -5,8 +5,11 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Pipes;
+using System.Net.Sockets;
 using System.Reflection;
 using System.Runtime.Serialization;
+using System.Threading.Tasks;
 using System.Xml;
 
 namespace EasyPipes
@@ -26,17 +29,21 @@ namespace EasyPipes
         /// </summary>
         public IReadOnlyList<Type> KnownTypes { get; private set; }
 
+        protected Encryptor Encryptor { get; private set; }
+
         private bool _disposed = false;
+        protected bool encrypted = false;
 
         /// <summary>
         /// Constructor
         /// </summary>
         /// <param name="s">Network stream</param>
         /// <param name="knowntypes">List of types to register with serializer</param>
-        public IpcStream(Stream s, IReadOnlyList<Type> knowntypes)
+        public IpcStream(Stream s, IReadOnlyList<Type> knowntypes, Encryptor encryptor = null)
         {
             BaseStream = s;
             KnownTypes = knowntypes;
+            Encryptor = encryptor;
         }
 
         ~IpcStream()
@@ -67,6 +74,40 @@ namespace EasyPipes
         }
 
         /// <summary>
+        /// Read the raw network message
+        /// </summary>
+        /// <returns>byte buffer</returns>
+        protected async Task<byte[]> ReadBytesAsync()
+        {
+            Func<bool> availableFunc;
+
+            if (BaseStream is NetworkStream)
+                availableFunc = () => { return ((NetworkStream)BaseStream).DataAvailable; };
+            else if (BaseStream is PipeStream)
+                availableFunc = () => { return true; };
+            else if (BaseStream.CanSeek)
+                availableFunc = () => { return BaseStream.Position < BaseStream.Length; };
+            else
+                throw new InvalidOperationException("IpcStream.BaseStream needs to be seekable or derived from a known type.");
+
+            await Extensions.WaitUntil(availableFunc, 25, 2000).ConfigureAwait(false);
+
+            byte[] buffer = new byte[2];
+            if (await BaseStream.ReadAsync(buffer, 0, 2).ConfigureAwait(false) != 2)
+                throw new EndOfStreamException("Insufficient bytes read from network stream");
+
+            int length = buffer[0] * 256;
+            length += buffer[1];
+
+            buffer = new byte[length];
+            int read = 0;
+            while (read < length)
+                read += await BaseStream.ReadAsync(buffer, read, length - read).ConfigureAwait(false);
+
+            return buffer;
+        }
+
+        /// <summary>
         /// Write a raw network message
         /// </summary>
         /// <param name="buffer">byte buffer</param>
@@ -88,14 +129,26 @@ namespace EasyPipes
         public IpcMessage ReadMessage()
         {
             // read the raw message
-            byte[] msg = this.ReadBytes();
+            // TODO: this is really ugly async work, but it seems that there some instances where 
+            // blocking sockets don't work nicely. Should work on a fully Async client for this.
+            byte[] msg = this.ReadBytesAsync().GetAwaiter().GetResult();
+
+            // decrypt if required
+            if(encrypted)
+                msg = Encryptor.DecryptMessage(msg);
 
             // deserialize
             DataContractSerializer serializer = new DataContractSerializer(typeof(IpcMessage), KnownTypes);
             XmlDictionaryReader rdr = XmlDictionaryReader
                 .CreateBinaryReader(msg, XmlDictionaryReaderQuotas.Max);
 
-            return (IpcMessage)serializer.ReadObject(rdr);
+            IpcMessage ipcmsg = (IpcMessage)serializer.ReadObject(rdr);
+
+            // switch on encryption
+            if (ipcmsg.StatusMsg == StatusMessage.Encrypt)
+                encrypted = true;
+
+            return ipcmsg;
         }
 
         /// <summary>
@@ -113,9 +166,19 @@ namespace EasyPipes
                 serializer.WriteObject(writer, msg);
                 writer.Flush();
 
+                byte[] binaryMsg = stream.ToArray();
+
+                // encrypt message
+                if (encrypted)
+                    binaryMsg = Encryptor.EncryptMessage(binaryMsg);
+
                 // write the raw message
-                this.WriteBytes(stream.ToArray());
+                this.WriteBytes(binaryMsg);
             }
+
+            // switch on encryption
+            if (msg.StatusMsg == StatusMessage.Encrypt)
+                encrypted = true;
         }
 
         public void Dispose()
