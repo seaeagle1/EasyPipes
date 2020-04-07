@@ -24,14 +24,22 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Rijndael256\Rijndael256.Tests\**" />
     <Compile Remove="UnitTests\**" />
+    <EmbeddedResource Remove="Rijndael256\Rijndael256.Tests\**" />
     <EmbeddedResource Remove="UnitTests\**" />
+    <None Remove="Rijndael256\Rijndael256.Tests\**" />
     <None Remove="UnitTests\**" />
   </ItemGroup>
 
   <ItemGroup>
     <None Remove=".git" />
     <None Remove=".gitignore" />
+    <None Remove="Rijndael256\.git" />
+    <None Remove="Rijndael256\.gitignore" />
+    <None Remove="Rijndael256\.travis.yml" />
+    <None Remove="Rijndael256\LICENSE" />
+    <None Remove="Rijndael256\README.md" />
   </ItemGroup>
 
   <ItemGroup>

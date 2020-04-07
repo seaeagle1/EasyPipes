@@ -272,7 +272,7 @@ namespace EPUnitTests
         [Fact]
         public void EncryptedTcpTest()
         {
-            Encryptor enc = new Encryptor("2c70e12b7a0646f92279f427c7b38e7334d8e5389cff167a1dc30e73f826b683", "iv345678");
+            Encryptor enc = new Encryptor("2c70e12b7a0646f92279f427c7b38e7334d8e5389cff167a1dc30e73f826b683");
 
             Server server = new TcpServer(new IPEndPoint(IPAddress.Parse("127.0.0.1"), 8055), enc);
             server.RegisterStatefulService<IService>(typeof(Calculator));

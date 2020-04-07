@@ -14,26 +14,20 @@ namespace EPUnitTests
     public class Encryption
     {
         private string DecryptedString = "This is a test string";
-        private string EncryptedString = "hF85eyF5bvzmGFZoZeybGjeLYaz/E4zUqW0fWP3waOK7IRXS6Hl/TjgoajukdiFJ";
 
         [Fact]
-        public void CheckEncryption()
+        public void CheckEncryptionAndDecryption()
         {
-            Encryptor enc = new Encryptor("2c70e12b7a0646f92279f427c7b38e7334d8e5389cff167a1dc30e73f826b683", "iv345678");
+            Encryptor enc = new Encryptor("2c70e12b7a0646f92279f427c7b38e7334d8e5389cff167a1dc30e73f826b683");
 
             byte[] result = enc.EncryptMessage(UnicodeEncoding.Unicode.GetBytes(DecryptedString));
             string readableresult = Convert.ToBase64String(result);
 
-            Assert.Equal(EncryptedString, readableresult);
-        }
 
-        [Fact]
-        public void CheckDecryption()
-        {
-            Encryptor enc = new Encryptor("2c70e12b7a0646f92279f427c7b38e7334d8e5389cff167a1dc30e73f826b683", "iv345678");
+            Encryptor enc2 = new Encryptor("2c70e12b7a0646f92279f427c7b38e7334d8e5389cff167a1dc30e73f826b683");
 
-            byte[] result = enc.DecryptMessage(Convert.FromBase64String(EncryptedString));
-            string readableresult = UnicodeEncoding.Unicode.GetString(result);
+            byte[] result2 = enc.DecryptMessage(Convert.FromBase64String(readableresult));
+            string readableresult2 = UnicodeEncoding.Unicode.GetString(result);
 
             Assert.Equal(DecryptedString, readableresult);
         }
