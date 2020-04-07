@@ -20,15 +20,12 @@ namespace EasyPipes
 
         public byte[] DecryptMessage(byte[] msg)
         {
-            string plainBase64Data = RijndaelEtM.Decrypt(msg, EncryptionKey, KeySize.Aes256);
-            return Convert.FromBase64String(plainBase64Data);
+            return RijndaelEtM.Decrypt(msg, EncryptionKey, KeySize.Aes256);
         }
 
         public byte[] EncryptMessage(byte[] msg)
         {
-            string plainBase64Data = Convert.ToBase64String(msg);
-            string encryptedBase64Data = RijndaelEtM.Encrypt(plainBase64Data, EncryptionKey, KeySize.Aes256);
-            return Convert.FromBase64String(encryptedBase64Data);
+            return RijndaelEtM.Encrypt(msg, EncryptionKey, KeySize.Aes256);
         }
     }
 }

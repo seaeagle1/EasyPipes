@@ -20,16 +20,18 @@ namespace EPUnitTests
         {
             Encryptor enc = new Encryptor("2c70e12b7a0646f92279f427c7b38e7334d8e5389cff167a1dc30e73f826b683");
 
-            byte[] result = enc.EncryptMessage(UnicodeEncoding.Unicode.GetBytes(DecryptedString));
+            byte[] encoded = UnicodeEncoding.Unicode.GetBytes(DecryptedString);
+            byte[] result = enc.EncryptMessage(encoded);
             string readableresult = Convert.ToBase64String(result);
 
 
             Encryptor enc2 = new Encryptor("2c70e12b7a0646f92279f427c7b38e7334d8e5389cff167a1dc30e73f826b683");
 
-            byte[] result2 = enc.DecryptMessage(Convert.FromBase64String(readableresult));
-            string readableresult2 = UnicodeEncoding.Unicode.GetString(result);
+            byte[] base64 = Convert.FromBase64String(readableresult);
+            byte[] result2 = enc.DecryptMessage(base64);
+            string readableresult2 = UnicodeEncoding.Unicode.GetString(result2);
 
-            Assert.Equal(DecryptedString, readableresult);
+            Assert.Equal(DecryptedString, readableresult2);
         }
     }
 }
