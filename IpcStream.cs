@@ -90,7 +90,7 @@ namespace EasyPipes
             else
                 throw new InvalidOperationException("IpcStream.BaseStream needs to be seekable or derived from a known type.");
 
-            await Extensions.WaitUntil(availableFunc, 25, 2000).ConfigureAwait(false);
+            await Extensions.WaitUntil(availableFunc, 25, Server.ReadTimeOut).ConfigureAwait(false);
 
             byte[] buffer = new byte[2];
             if (await BaseStream.ReadAsync(buffer, 0, 2).ConfigureAwait(false) != 2)
@@ -134,7 +134,10 @@ namespace EasyPipes
             byte[] msg = this.ReadBytesAsync().GetAwaiter().GetResult();
 
             // decrypt if required
-            if(encrypted)
+            if (encrypted)
+                if (Encryptor == null)
+                    throw new NullReferenceException("Encryption requested while no encryptor was set");
+                else
                 msg = Encryptor.DecryptMessage(msg);
 
             // deserialize
@@ -170,7 +173,10 @@ namespace EasyPipes
 
                 // encrypt message
                 if (encrypted)
-                    binaryMsg = Encryptor.EncryptMessage(binaryMsg);
+                    if (Encryptor == null)
+                        throw new NullReferenceException("Encryption requested while no encryptor was set");
+                    else
+                        binaryMsg = Encryptor.EncryptMessage(binaryMsg);
 
                 // write the raw message
                 this.WriteBytes(binaryMsg);
