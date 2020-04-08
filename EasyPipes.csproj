@@ -6,16 +6,17 @@
     <Company>OS</Company>
     <Description>Lightweight IPC library based on NamedPipes or TCP. Provides easy-to-use proxy interface for remote calls. Built on .NET Standard 2.0 for compatability with most modern .NET versions.</Description>
     <PackageLicenseUrl>https://www.mozilla.org/en-US/MPL/2.0/</PackageLicenseUrl>
-    <Copyright>(C) 2018 - Contributors</Copyright>
+    <Copyright>(C) 2018-2020 - Contributors</Copyright>
     <PackageProjectUrl>https://github.com/seaeagle1/EasyPipes</PackageProjectUrl>
     <RepositoryUrl>https://github.com/seaeagle1/EasyPipes.git</RepositoryUrl>
     <RepositoryType>Git</RepositoryType>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>EasyPipesKey.pfx</AssemblyOriginatorKeyFile>
-    <PackageReleaseNotes>First proper release!</PackageReleaseNotes>
+    <PackageReleaseNotes>Added stateful services and encrypted tcp</PackageReleaseNotes>
     <AssemblyVersion>1.2.0.0</AssemblyVersion>
     <FileVersion>1.2.0.0</FileVersion>
     <Version>1.2.0</Version>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
