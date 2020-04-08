@@ -51,10 +51,70 @@ IService service = client.GetServiceProxy<IService>();
 int result = service.Sum(6, 12); // = 18
 ```
 
+Encrypted TCP:
+```csharp
+using EasyPipes;
+
+/// IService defines the IPC interface
+public interface IService
+{
+	[EncryptIfTrue]
+	bool Authenticate(string username, string password);
+
+	string GetSecretData();
+}
+
+// --------- SERVER --------------
+class StatefulService : IService
+{
+	private bool has_authenticated = false;
+
+	public bool Authenticate(string username, string password)
+	{
+		if(Authenticated(username, password))
+		{
+			this.has_authenticated = true;
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	public string GetSecretData()
+	{
+		if(has_authenticated)
+			return somesecretstuff;
+		else
+			throw new Exception("Not authenticated");
+	}
+}
+
+// start up
+TcpServer server = new TcpServer(new IPEndPoint(address, port), new Encryptor(sharedkey));
+server.RegisterStatefulService<IService>(typeof(StatefulService));
+server.Start();
+
+// eventual shutdown
+server.Stop();
+
+// --------- CLIENT -------------
+// setup client
+TcpClient client = new TcpClient(new IPEndPoint(address, port), new Encryptor(sharedkey));
+IService service = client.GetServiceProxy<IService>();
+
+// authenticate (transmitted in plaintext!)
+if(service.Authenticate(username, password))
+{
+	// transmit encrypted messages
+	string data = service.GetSecretData();
+}
+```
+
 Remarks:
-* There is a single instance of the server class used by all clients!
-* It's primarily focussed on IPC on single-machine or close-connections, so it might not perform well with long-distance internet connections.
+* By default there is a single instance of the server class used by all clients! Use the stateful service for service which require an instance per connection.
+* It's primarily focussed on IPC on single-machine or swift LAN-connections, so it likely will not perform well with long-distance internet connections.
 * Any and all arguments or return values are serialized using DataContractSerializer, so custom types that need to cross the connection should be designed accordingly.
+* Provides optional AES256 encryption for TCP connections upon call to a labelled service method, for example after authentication
 
 ## Licence
 
