@@ -39,6 +39,8 @@ namespace EasyPipes
         /// </summary>
         /// <param name="s">Network stream</param>
         /// <param name="knowntypes">List of types to register with serializer</param>
+        /// <param name="encryptor">Optional encryption algorithm, will only be enabled after an IpcMessage
+        /// with Encrypt status is passed</param>
         public IpcStream(Stream s, IReadOnlyList<Type> knowntypes, Encryptor encryptor = null)
         {
             BaseStream = s;
@@ -79,8 +81,8 @@ namespace EasyPipes
         /// <returns>byte buffer</returns>
         protected async Task<byte[]> ReadBytesAsync()
         {
+            // establish function to find out if there's data available, based on type of stream
             Func<bool> availableFunc;
-
             if (BaseStream is NetworkStream)
                 availableFunc = () => { return ((NetworkStream)BaseStream).DataAvailable; };
             else if (BaseStream is PipeStream)
@@ -90,15 +92,19 @@ namespace EasyPipes
             else
                 throw new InvalidOperationException("IpcStream.BaseStream needs to be seekable or derived from a known type.");
 
+            // wait until data is available
             await Extensions.WaitUntil(availableFunc, 25, Server.ReadTimeOut).ConfigureAwait(false);
 
+            // read message length
             byte[] buffer = new byte[2];
             if (await BaseStream.ReadAsync(buffer, 0, 2).ConfigureAwait(false) != 2)
                 throw new EndOfStreamException("Insufficient bytes read from network stream");
 
+            // calculate message length
             int length = buffer[0] * 256;
             length += buffer[1];
 
+            // read message
             buffer = new byte[length];
             int read = 0;
             while (read < length)
@@ -117,7 +123,10 @@ namespace EasyPipes
             if (length > UInt16.MaxValue)
                 throw new InvalidOperationException("Message is too long");
 
+            // write message length
             BaseStream.Write(new byte[] { (byte)(length / 256), (byte)(length & 255) }, 0, 2);
+
+            // write message
             BaseStream.Write(buffer, 0, length);
             BaseStream.Flush();
         }
@@ -138,7 +147,7 @@ namespace EasyPipes
                 if (Encryptor == null)
                     throw new NullReferenceException("Encryption requested while no encryptor was set");
                 else
-                msg = Encryptor.DecryptMessage(msg);
+                    msg = Encryptor.DecryptMessage(msg);
 
             // deserialize
             DataContractSerializer serializer = new DataContractSerializer(typeof(IpcMessage), KnownTypes);

@@ -23,6 +23,9 @@ namespace EasyPipes
         /// </summary>
         public IPEndPoint EndPoint { get; private set; }
 
+        /// <summary>
+        /// Encryption algorithm
+        /// </summary>
         protected Encryptor Encryptor { get; private set; }
 
         /// <summary>
@@ -34,14 +37,17 @@ namespace EasyPipes
         /// Construct the server
         /// </summary>
         /// <param name="address">Address and port to bind for the server</param>
-        /// <param name="encyptionkey">Optional key for AES encryption of the stream</param>
-        /// <param name="iv">Initialization vector for AES encryption</param>
+        /// <param name="encryptor">Optional encryption algorithm for the messages, will be enabled
+        /// after call to an <see cref="EncryptIfTrueAttribute"/> labeled method</param>  
         public TcpServer(IPEndPoint address, Encryptor encryptor = null) : base(null)
         {
             EndPoint = address;
             Encryptor = encryptor;
         }
 
+        /// <summary>
+        /// Start listening on the TCP socket
+        /// </summary>
         protected override void DoStart()
         {
             listener = new TcpListener(EndPoint);
@@ -52,18 +58,25 @@ namespace EasyPipes
             serverTask.Add(t);
         }
 
+        /// <summary>
+        /// Stop listening on the TCP socket
+        /// </summary>
         public override void Stop()
         {
             base.Stop();
             listener.Stop();
         }
 
+        /// <summary>
+        /// Main connection loop, waits for and handles connections
+        /// </summary>
         protected override void ReceiveAction()
         {
             try
             {
                 var t = listener.AcceptTcpClientAsync(CancellationToken.Token);
 
+                // wait for connection
                 using (System.Net.Sockets.TcpClient client = t.GetAwaiter().GetResult())
                 {
                     // Start new connection waiter before anything can go wrong here,
@@ -78,6 +91,7 @@ namespace EasyPipes
                         Guid id = Guid.NewGuid();
                         IpcStream stream = new IpcStream(serverStream, KnownTypes, Encryptor);
 
+                        // process incoming messages until disconnect
                         while (ProcessMessage(stream, id))
                         { }
                         StatefulProxy.NotifyDisconnect(id);

@@ -15,20 +15,43 @@ namespace EasyPipes
     /// </summary>
     public class Client
     {
+
+        /// <summary>
+        /// Default proxy class for custom proxying. Allows intercepting calls and route them through
+        /// the ipc channel.
+        /// </summary>
+        /// <typeparam name="T">The ipc-service interface</typeparam>
         public class Proxy<T> : IInterceptor
         {
+            /// <summary>
+            /// The ipc client associated with this proxy
+            /// </summary>
             public Client Client { get; private set; }
 
+            /// <summary>
+            /// Constructor
+            /// </summary>
+            /// <param name="c">The ipc client associated with this proxy</param>
             public Proxy(Client c)
             {
                 Client = c;
             }
 
+            /// <summary>
+            /// Passes an invocation (method-call) through the IPC channel
+            /// </summary>
+            /// <param name="invocation">The call to pass on</param>
             public void Intercept(IInvocation invocation)
             {
                 invocation.ReturnValue = Intercept(invocation.Method.Name, invocation.Arguments);
             }
 
+            /// <summary>
+            /// Passes a method-call through the IPC channel
+            /// </summary>
+            /// <param name="methodName">The method name (as recognized by Reflection)</param>
+            /// <param name="arguments">Array of the call parameters</param>
+            /// <returns>The call return</returns>
             protected object Intercept(string methodName, object[] arguments)
             {
                 // build message for intercepted call
@@ -124,6 +147,9 @@ namespace EasyPipes
             return true;
         }
 
+        /// <summary>
+        /// Start timer-based keep-alive pinging. Timer is set for 0.5x the timeout time.
+        /// </summary>
         protected void StartPing()
         {
             timer = new Timer(

@@ -49,6 +49,7 @@ namespace EasyPipes
 
         /// <summary>
         /// Register a service interface on the server
+        /// This is a one instance for all clients service
         /// </summary>
         /// <typeparam name="T">The interface of the service</typeparam>
         /// <param name="instance">Instance of a class implementing the service</param>
@@ -66,6 +67,13 @@ namespace EasyPipes
             IpcStream.ScanInterfaceForTypes(typeof(T), KnownTypes);
         }
 
+        /// <summary>
+        /// Register a service interface on the server that keeps its state for a connection
+        /// This a one instance for one client/connection service
+        /// </summary>
+        /// <typeparam name="T">The interface of the service</typeparam>
+        /// <param name="t">Type of the class implementing the service, should have a default constructor
+        /// which will be called on connection of a new client</param>
         public void RegisterStatefulService<T>(Type t)
         {
             if (!typeof(T).IsInterface)
@@ -172,7 +180,8 @@ namespace EasyPipes
         /// Process a received message by calling the corresponding method on the service instance and 
         /// returning the return value over the network.
         /// </summary>
-        /// <param name="source">Network stream</param>
+        /// <param name="stream">The message stream</param>
+        /// <param name="streamId">A GUID identifying this connection</param>
         public bool ProcessMessage(IpcStream stream, Guid streamId)
         {
             IpcMessage msg = stream.ReadMessage();
@@ -180,6 +189,7 @@ namespace EasyPipes
             // this was a close-connection notification
             if (msg.StatusMsg == StatusMessage.CloseConnection)
                 return false;
+            // or this is just a keepalive ping
             else if (msg.StatusMsg == StatusMessage.Ping)
                 return true;
 

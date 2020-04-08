@@ -21,6 +21,9 @@ namespace EasyPipes
         /// </summary>
         public IPEndPoint EndPoint { get; private set; }
 
+        /// <summary>
+        /// Encryption algorithm
+        /// </summary>
         protected Encryptor Encryptor { get; private set; }
 
         /// <summary>
@@ -32,14 +35,19 @@ namespace EasyPipes
         /// Construct the client
         /// </summary>
         /// <param name="address">Address and port to connect to</param>
-        /// <param name="encyptionkey">Optional key for AES encryption of the stream</param>
-        /// <param name="iv">Initialization vector for AES encryption</param>        
+        /// <param name="encryptor">Optional encryption algorithm for the messages, will be enabled
+        /// after call to an <see cref="EncryptIfTrueAttribute"/> labeled method</param>      
         public TcpClient(IPEndPoint address, Encryptor encryptor = null) : base(null)
         {
             EndPoint = address;
             Encryptor = encryptor;
         }
 
+        /// <summary>
+        /// Establish the TCP connection asynchonously
+        /// </summary>
+        /// <param name="keepalive">Wether the connection should be kept alive after a first message</param>
+        /// <returns>True for success, False otherwise</returns>
         public async Task<bool> ConnectAsync(bool keepalive = true)
         {
             try
@@ -66,6 +74,11 @@ namespace EasyPipes
             return true;
         }
 
+        /// <summary>
+        /// Establish the TCP connection
+        /// </summary>
+        /// <param name="keepalive">Wether the connection should be kept alive after a first message</param>
+        /// <returns>True for success, False otherwise</returns>
         public override bool Connect(bool keepalive = true)
         {
             try
@@ -90,6 +103,10 @@ namespace EasyPipes
             return true;
         }
 
+        /// <summary>
+        /// Disconnect the TCP connection
+        /// </summary>
+        /// <param name="sendCloseMessage">Does notify the server of the disconnect (recommended)</param>
         public override void Disconnect(bool sendCloseMessage = true)
         {
             base.Disconnect(sendCloseMessage);
