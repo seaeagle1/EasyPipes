@@ -58,7 +58,6 @@ using EasyPipes;
 /// IService defines the IPC interface
 public interface IService
 {
-	[EncryptIfTrue]
 	bool Authenticate(string username, string password);
 
 	string GetSecretData();
@@ -69,6 +68,7 @@ class StatefulService : IService
 {
 	private bool has_authenticated = false;
 
+	[EncryptIfTrue]
 	public bool Authenticate(string username, string password)
 	{
 		if(Authenticated(username, password))
