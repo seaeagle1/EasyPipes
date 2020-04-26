@@ -33,7 +33,7 @@ namespace EasyPipes
         /// <returns>The binary "plaintext"</returns>
         public byte[] DecryptMessage(byte[] msg)
         {
-            return RijndaelEtM.Decrypt(msg, EncryptionKey, KeySize.Aes256);
+            return RijndaelEtM.DecryptBinary(msg, EncryptionKey, KeySize.Aes256);
         }
 
         /// <summary>
@@ -43,7 +43,7 @@ namespace EasyPipes
         /// <returns>The binary "ciphertext" with IV and MAC</returns>
         public byte[] EncryptMessage(byte[] msg)
         {
-            return RijndaelEtM.Encrypt(msg, EncryptionKey, KeySize.Aes256);
+            return RijndaelEtM.EncryptBinary(msg, EncryptionKey, KeySize.Aes256);
         }
     }
 }

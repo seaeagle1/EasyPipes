@@ -29,10 +29,16 @@
 
   <ItemGroup>
     <Compile Remove="Rijndael256\Rijndael256.Tests\**" />
+    <Compile Remove="Rijndael256\Rijndael256\bin\**" />
+    <Compile Remove="Rijndael256\Rijndael256\obj\**" />
     <Compile Remove="UnitTests\**" />
     <EmbeddedResource Remove="Rijndael256\Rijndael256.Tests\**" />
+    <EmbeddedResource Remove="Rijndael256\Rijndael256\bin\**" />
+    <EmbeddedResource Remove="Rijndael256\Rijndael256\obj\**" />
     <EmbeddedResource Remove="UnitTests\**" />
     <None Remove="Rijndael256\Rijndael256.Tests\**" />
+    <None Remove="Rijndael256\Rijndael256\bin\**" />
+    <None Remove="Rijndael256\Rijndael256\obj\**" />
     <None Remove="UnitTests\**" />
   </ItemGroup>
 
