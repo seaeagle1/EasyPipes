@@ -209,7 +209,7 @@ namespace EasyPipes
         /// <param name="knownTypes">List to add found types to</param>
         public static void ScanInterfaceForTypes(Type T, IList<Type> knownTypes)
         {
-            // scan used types
+            // scan used types in methods
             foreach (MethodInfo mi in T.GetMethods())
             {
                 Type t;
@@ -217,7 +217,7 @@ namespace EasyPipes
                 {
                     t = pi.ParameterType;
 
-                    if (!t.IsClass && !t.IsInterface)
+                    if (!t.IsClass && !t.IsInterface && !t.IsValueType)
                         continue;
 
                     if (!knownTypes.Contains(t))
@@ -225,7 +225,7 @@ namespace EasyPipes
                 }
 
                 t = mi.ReturnType;
-                if (!t.IsClass && !t.IsInterface)
+                if (!t.IsClass && !t.IsInterface && !t.IsValueType)
                     continue;
 
                 if (!knownTypes.Contains(t))
