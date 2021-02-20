@@ -35,16 +35,23 @@ namespace EasyPipes
         readonly Dictionary<string, object> services = new Dictionary<string, object>();
         readonly Dictionary<string, Type> types = new Dictionary<string, Type>();
         protected List<Task> serverTask;
+        protected Func<string, int, NamedPipeServerStream> pipeOpeningFunc;
 
         /// <summary>
         /// Construct server
         /// </summary>
         /// <param name="pipe">Name of the pipe to use</param>
-        public Server(string pipe)
+        /// <param name="pipeOpening">Optional delegate to open PipeStream (for example through NamedPipeServerStreamAcl)</param>
+        public Server(string pipe, Func<string, int, NamedPipeServerStream> pipeOpening = null)
         {
             PipeName = pipe;
             CancellationToken = new CancellationTokenSource();
             KnownTypes = new List<Type>();
+
+            if (pipeOpening == null)
+                pipeOpeningFunc = OpenPipe;
+            else
+                pipeOpeningFunc = pipeOpening;
         }
 
         /// <summary>
@@ -144,24 +151,33 @@ namespace EasyPipes
         }
 
         /// <summary>
+        /// Default creation of PipeStream
+        /// </summary>
+        /// <param name="name">Name of the pipe</param>
+        /// <param name="number">Max number of instances</param>
+        /// <returns>Opened Pipestream</returns>
+        protected virtual NamedPipeServerStream OpenPipe(string name, int number)
+        {
+            return new NamedPipeServerStream(
+                        name,
+                        PipeDirection.InOut,
+                        number,
+                        PipeTransmissionMode.Byte,
+                        PipeOptions.Asynchronous);
+        }
+
+        /// <summary>
         /// Wait on connection and received messages
         /// </summary>
         protected virtual void ReceiveAction()
         {
             try
             {
-                using (NamedPipeServerStream serverStream =
-                    new NamedPipeServerStream(
-                        PipeName,
-                        PipeDirection.InOut,
-                        NumberOfThreads,
-                        PipeTransmissionMode.Byte,
-                        PipeOptions.Asynchronous))
+                using (NamedPipeServerStream serverStream = pipeOpeningFunc(PipeName, NumberOfThreads))
                 {
                     Task t = serverStream.WaitForConnectionAsync(CancellationToken.Token);
                     t.GetAwaiter().GetResult();
 
- 
                     Guid id = Guid.NewGuid();
                     IpcStream stream = new IpcStream(serverStream, KnownTypes);
 
