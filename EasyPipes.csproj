@@ -16,6 +16,7 @@
     <Version>1.4.0</Version>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageLicenseExpression>MPL-2.0</PackageLicenseExpression>
+    <DelaySign>false</DelaySign>
   </PropertyGroup>
   
   <PropertyGroup Condition="'$(MSBuildRuntimeType)'!='Core'">

@@ -214,7 +214,7 @@ namespace EasyPipes
             if (sendCloseMessage)
             {
                 // stop keepalive ping
-                timer.Dispose();
+                timer?.Dispose();
 
                 IpcMessage msg = new IpcMessage() { StatusMsg = StatusMessage.CloseConnection };
                 Stream.WriteMessage(msg);

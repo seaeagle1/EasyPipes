@@ -3,3 +3,4 @@ bin/
 obj/
 Properties/PublishProfiles/
 *.pfx
+*.user
